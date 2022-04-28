@@ -1,27 +1,66 @@
-import React from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useMemo } from 'react';
+import { useSelector } from 'react-redux';
 import PropTypes from 'prop-types';
-import { deleteContacts } from '../../redux/contacts/contacts-actions';
-import { getVisibleContacts } from '../../redux/contacts/contacts-selectors';
-import { Button, List, Item, Text } from './ContactList.styled';
+import { toast } from 'react-toastify';
+import { FiDelete } from 'react-icons/fi';
+import { MdContactPhone } from 'react-icons/md';
+import { useGetContactsByNameQuery } from '../../redux';
+import { getFilter } from '../../redux';
+import {
+  List,
+  Item,
+  Text,
+  ContactWrapper,
+  ChangeColor,
+} from './ContactList.styled';
 
-const ContactList = () => {
-  const contacts = useSelector(getVisibleContacts);
-  const dispatch = useDispatch();
-  const onDeleteContact = id => dispatch(deleteContacts(id));
+const ContactList = ({ onDeleteContact }) => {
+  const { data: contacts } = useGetContactsByNameQuery();
+  const filter = useSelector(getFilter);
+
+  const getVisibleContacts = useMemo(() => {
+    const normalizeFilter = filter.toLowerCase();
+    return contacts.filter(contact =>
+      contact.name.toLowerCase().includes(normalizeFilter),
+    );
+  }, [filter, contacts]);
 
   return (
-    <List>
-      {contacts.map(({ id, name, number }) => (
-        <Item key={id}>
-          <Text>{name}:</Text>
-          <Text>{number}</Text>
-          <Button type="button" onClick={() => onDeleteContact(id)}>
-            Delete
-          </Button>
-        </Item>
-      ))}
-    </List>
+    <>
+      {contacts && (
+        <List>
+          {getVisibleContacts.map(({ id, name, phone }) => (
+            <Item key={id}>
+              <ContactWrapper>
+                <ChangeColor>
+                  <MdContactPhone
+                    style={{
+                      width: 50,
+                      height: 50,
+                      marginRight: 20,
+                    }}
+                  />
+                </ChangeColor>
+                <Text>{name}:</Text>
+                <Text>{phone}</Text>
+              </ContactWrapper>
+              <ChangeColor>
+                <FiDelete
+                  onClick={() => {
+                    onDeleteContact(id);
+                    toast.info(`${name} deleted from contacts.`);
+                  }}
+                  style={{
+                    width: 50,
+                    height: 50,
+                  }}
+                />
+              </ChangeColor>
+            </Item>
+          ))}
+        </List>
+      )}
+    </>
   );
 };
 
@@ -32,63 +71,8 @@ ContactList.propTypes = {
     PropTypes.shape({
       id: PropTypes.string.isRequired,
       name: PropTypes.string.isRequired,
-      number: PropTypes.string.isRequired,
+      phone: PropTypes.string.isRequired,
     }),
   ),
   onDeleteContact: PropTypes.func,
 };
-
-//----------------------------------------------
-//redux-toolkit без хуків
-//----------------------------------------------
-
-/* import React from 'react';
-import PropTypes from 'prop-types';
-import { connect } from 'react-redux';
-import { deleteContacts } from '../../redux/contacts/contacts-actions';
-import { Button, List, Item, Text } from './ContactList.styled';
-
-const ContactList = ({ contacts, onDeleteContact }) => (
-  <List>
-    {contacts.map(({ id, name, number }) => (
-      <Item key={id}>
-        <Text>{name}:</Text>
-        <Text>{number}</Text>
-        <Button type="button" onClick={() => onDeleteContact(id)}>
-          Delete
-        </Button>
-      </Item>
-    ))}
-  </List>
-);
-
-const getVisibleTodos = (items, filter) => {
-  const normalizedFilter = filter.toLowerCase();
-
-  return items.filter(({ name }) =>
-    name.toLowerCase().includes(normalizedFilter),
-  );
-};
-
-const mapStateToProps = ({ contacts: { items, filter } }) => ({
-  contacts: getVisibleTodos(items, filter),
-});
-
-const mapDispatchToProps = dispatch => ({
-  onDeleteContact: id => dispatch(deleteContacts(id)),
-});
-
-export default connect(mapStateToProps, mapDispatchToProps)(ContactList);
-
-ContactList.propTypes = {
-  contacts: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      name: PropTypes.string.isRequired,
-      number: PropTypes.string.isRequired,
-    }),
-  ).isRequired,
-  onDeleteContact: PropTypes.func.isRequired,
-};
-
- */

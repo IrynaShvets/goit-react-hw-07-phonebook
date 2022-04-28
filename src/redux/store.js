@@ -1,18 +1,18 @@
 import { configureStore, getDefaultMiddleware } from '@reduxjs/toolkit';
 import logger from 'redux-logger';
-import contactsReducer from './contacts/contacts-reducer';
+import { setupListeners } from '@reduxjs/toolkit/query';
+import filterReducer from './contacts-reducer';
+import { contactsApi } from './contacts-api';
 
-const middleware = [
-  ...getDefaultMiddleware({
-    serializableCheck: false,
-  }),
-  logger,
-];
+const middleware = [...getDefaultMiddleware(), contactsApi.middleware, logger];
 
 export const store = configureStore({
   reducer: {
-    contacts: contactsReducer,
+    contacts: filterReducer,
+    [contactsApi.reducerPath]: contactsApi.reducer,
   },
   middleware,
   devTools: process.env.NODE_ENV === 'development',
 });
+
+setupListeners(store.dispatch);
